@@ -1,0 +1,16 @@
+version: "3.1"
+
+intents:
+  - saudacao
+  - finalizacao
+
+responses:
+  utter_saudacao:
+  - text: "Olá! Como posso ajudar?"
+
+  utter_finalizacao:
+  - text: "Tenha um ótimo dia!"
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

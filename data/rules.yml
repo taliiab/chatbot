@@ -1,0 +1,13 @@
+version: "3.1"
+
+rules:
+
+- rule: Finalizao de conversa
+  steps:
+  - intent: finalizacao
+  - action: utter_finalizacao
+
+- rule: Saudação inicial
+  steps:
+  - intent: saudacao
+  - action: utter_saudacao
