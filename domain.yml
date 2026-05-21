@@ -3,14 +3,348 @@ version: "3.1"
 intents:
   - saudacao
   - finalizacao
+  - agradecimento
+  - fazer_pedido
+  - visualizar_pedidos
+  - falar_empresa
+  - informar_produto
+  - informar_quantidade
+  - informar_rua
+  - informar_numero
+  - informar_bairro
+  - informar_cep
+  - informar_complemento
+  - informar_pagamento
+  - informar_endereco
+  - informar_data
+  - confirmar
+  - negar
+  - alterar_pedido
+  - cancelar_pedido
+  - alterar_endereco_completo
+  - mudar_informacao
+
+entities:
+  - produto
+  - pagamento
+  - campo_alterar
+
+actions:
+  - action_calcular_valores_pedido
+  - action_salvar_pedido_banco
+  - action_buscar_pedidos_banco
+  - action_resetar_campos_form
+  - action_cancelar_pedido_banco
+  - action_resetar_slots_endereco
+  - action_limpar_slot_para_alterar
+
+slots:
+  produto:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_intent
+        value: extra
+        intent: informar_produto
+        conditions:
+          - active_loop: fechar_pedido_form
+            requested_slot: produto
+      - type: from_intent
+        value: jumbo
+        intent: informar_produto
+        conditions:
+          - active_loop: fechar_pedido_form
+            requested_slot: produto
+
+  quantidade:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_text
+        conditions:
+          - active_loop: fechar_pedido_form
+            requested_slot: quantidade
+
+  rua:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_text
+        conditions:
+          - active_loop: fechar_pedido_form
+            requested_slot: rua
+
+  numero:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_text
+        conditions:
+          - active_loop: fechar_pedido_form
+            requested_slot: numero
+
+  bairro:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_text
+        conditions:
+          - active_loop: fechar_pedido_form
+            requested_slot: bairro
+
+  cep:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_text
+        conditions:
+          - active_loop: fechar_pedido_form
+            requested_slot: cep
+
+  complemento:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_text
+        conditions:
+          - active_loop: fechar_pedido_form
+            requested_slot: complemento
+
+  data:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_text
+        conditions:
+          - active_loop: fechar_pedido_form
+            requested_slot: data
+
+  pagamento:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_intent
+        value: pix
+        intent: informar_pagamento
+        conditions:
+          - active_loop: fechar_pedido_form
+            requested_slot: pagamento
+      - type: from_intent
+        value: dinheiro
+        intent: informar_pagamento
+        conditions:
+          - active_loop: fechar_pedido_form
+            requested_slot: pagamento
+      - type: from_intent
+        value: credito
+        intent: informar_pagamento
+        conditions:
+          - active_loop: fechar_pedido_form
+            requested_slot: pagamento
+      - type: from_intent
+        value: debito
+        intent: informar_pagamento
+        conditions:
+          - active_loop: fechar_pedido_form
+            requested_slot: pagamento
+
+  valor_entrega:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  valor_total:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  campo_alterar:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: from_entity
+        entity: campo_alterar
+
+forms:
+  fechar_pedido_form:
+    required_slots:
+      - produto
+      - quantidade
+      - rua
+      - numero
+      - bairro
+      - cep
+      - complemento
+      - data
+      - pagamento
 
 responses:
   utter_saudacao:
-  - text: "Olá! Como posso ajudar?"
+    - text: |
+        🐔🥚 Olá, seja bem-vindo à Vó Nana Ovos!
+
+        Somos uma empresa comprometida com a produção de ovos de qualidade, vindos de galinhas criadas com mais liberdade, cuidado e bem-estar.
+
+        Acreditamos que um ambiente mais saudável para as aves resulta em produtos mais frescos e saborosos para a sua mesa. 💛
+
+        Como podemos te ajudar hoje?
+      buttons:
+        - title: "🥚 Fazer um pedido"
+          payload: "/fazer_pedido"
+        - title: "📦 Visualizar pedidos"
+          payload: "/visualizar_pedidos"
+        - title: "📞 Falar com a empresa"
+          payload: "/falar_empresa"
+
+  utter_ask_produto:
+    - text: |
+        🥚 Ótimo! Conheça nossos produtos:
+
+        1️⃣ Dúzia de ovos extras — R$ 18,00
+
+        2️⃣ Ovos tipo Jumbo (10 unidades) — R$ 19,00
+
+        📑 Lembrete:
+        Na compra de 5 duas (ou 5 caixas jumbo), a entrega será gratuita! 🚚
+      buttons:
+        - title: "1️⃣ Dúzia Extra"
+          payload: '/informar_produto{"produto": "extra"}'
+        - title: "2️⃣ Jumbo"
+          payload: '/informar_produto{"produto": "jumbo"}'
+
+  utter_ask_quantidade:
+    - text: |
+        Excelente escolha! 🥚
+
+        Quantas unidades ou caixas você deseja encomendar?
+
+  utter_ask_rua:
+    - text: "🏡 Qual é o nome da sua rua ou avenida?"
+
+  utter_ask_numero:
+    - text: "🔢 Qual é o número da residência?"
+
+  utter_ask_bairro:
+    - text: "📍 Qual é o seu bairro?"
+
+  utter_ask_cep:
+    - text: "📮 Qual é o seu CEP? (Se não souber, pode digitar 'Não sei')"
+
+  utter_ask_complemento:
+    - text: "🏢 Tem algum complemento? (Ex: Bloco B, Apto 202, Fundos. Se não tiver, digite 'Não')"
+
+  utter_ask_data:
+    - text: |
+        📅 Certo!
+
+        Qual data você deseja para a entrega?
+
+  utter_ask_pagamento:
+    - text: "💳 Qual será a forma de pagamento?"
+      buttons:
+        - title: "Pix"
+          payload: '/informar_pagamento{"pagamento":"pix"}'
+        - title: "Dinheiro"
+          payload: '/informar_pagamento{"pagamento":"dinheiro"}'
+        - title: "Crédito"
+          payload: '/informar_pagamento{"pagamento":"credito"}'
+        - title: "Débito"
+          payload: '/informar_pagamento{"pagamento":"debito"}'
+
+  utter_conferir_pedido:
+    - text: |
+        📝 Resumo do pedido:
+
+        🥚 Produto: {produto}
+        📦 Quantidade: {quantidade}
+
+        🏡 Endereço de Entrega:
+        • Rua: {rua}, Nº {numero}
+        • Bairro: {bairro}
+        • CEP: {cep}
+        • Comp.: {complemento}
+
+        📅 Data de entrega: {data}
+        💳 Método de pagamento: {pagamento}
+
+        🚚 Valor entrega: R$ {valor_entrega}
+        💵 Valor total: R$ {valor_total}
+
+        Você confirma essas informações?
+      buttons:
+        - title: "✅ Sim"
+          payload: "/confirmar"
+        - title: "✏️ Alterar"
+          payload: "/alterar_pedido"
+
+  utter_pedido_confirmado:
+    - text: |
+        ✅ Seu pedido foi realizado com SUCESSO!
+
+        Agora é só aguardar, nossa equipe já está preparando! 🐔🥚
+
+        Agradecemos pela preferência! 💛
+
+  utter_alteracao_pedido:
+    - text: "Qual informação você deseja alterar?"
+      buttons:
+        - title: "🥚 Produto"
+          payload: '/mudar_informacao{"campo_alterar": "produto"}'
+        - title: "📦 Quantidade"
+          payload: '/mudar_informacao{"campo_alterar": "quantidade"}'
+        - title: "🏡 Rua"
+          payload: '/mudar_informacao{"campo_alterar": "rua"}'
+        - title: "🔢 Número"
+          payload: '/mudar_informacao{"campo_alterar": "numero"}'
+        - title: "📅 Data"
+          payload: '/mudar_informacao{"campo_alterar": "data"}'
+        - title: "💳 Pagamento"
+          payload: '/mudar_informacao{"campo_alterar": "pagamento"}'
+
+  utter_alteracao_endereco:
+    - text: "Certo! Digite seu novo endereço de entrega."
+
+  utter_alteracao_data:
+    - text: "Certo! Digite sua nova data de entrega."
+
+  utter_alteracao_pagamento:
+    - text: "Certo! Digite seu novo método de pagamento."
+
+  utter_confirmar_alteracao:
+    - text: "✅ Sua alteração foi realizada com sucesso!"
+
+  utter_visualizar_pedidos:
+    - text: |
+        📦 Certo!
+
+        Estamos localizando seus pedidos...
+
+  utter_cancelar_pedido:
+    - text: |
+        Qual é o código do pedido que deseja cancelar?
+
+  utter_cancelar_pedido_confirmar:
+    - text: |
+        ✅ Ok, seu pedido foi cancelado com sucesso!
+
+  utter_falar_empresa:
+    - text: |
+        ⏳ Aguarde um momento...
+
+        Estamos entrando em contato com nossa equipe.
+
+  utter_agradecimento:
+    - text: |
+        😊 Disponha!
+
+        Posso ajudar em mais alguma coisa?
 
   utter_finalizacao:
-  - text: "Tenha um ótimo dia!"
+    - text: |
+        💛 Tenha um ótimo dia!
 
 session_config:
   session_expiration_time: 60
-  carry_over_slots_to_new_session: true
+  carry_over_slots_to_new_session: false

@@ -2,7 +2,20 @@ version: "3.1"
 
 stories:
 
-- story: caminho feliz
-  steps:
-  - intent: saudacao
-  - action: utter_saudacao
+  - story: Fluxo feliz - Confirmou o resumo e salvou no banco
+    steps:
+      - action: utter_conferir_pedido
+      - intent: confirmar
+      - action: action_salvar_pedido_banco
+
+  - story: Fluxo de listar todos os pedidos
+    steps:
+      - intent: visualizar_pedidos
+      - action: action_buscar_pedidos_banco
+      
+  - story: Fluxo de cancelamento de pedido
+    steps:
+      - intent: cancelar_pedido
+      - action: utter_cancelar_pedido
+      - intent: informar_numero
+      - action: action_cancelar_pedido_banco

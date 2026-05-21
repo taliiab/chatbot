@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.env
+
+# Rasa
+.rasa/
+models/
+results/
+
+# VSCode
+.vscode/
+
+# Sistema
+.DS_Store
+Thumbs.db

@@ -1,17 +1,181 @@
 version: "3.1"
 
 nlu:
-- intent: saudacao
-  examples: |
-    - oii
-    - oi
-    - bom dia
-    - boa tarde
-    - boa noite
-    - oie
-    - ola
+  - intent: saudacao
+    examples: |
+      - oi
+      - olá
+      - bom dia
+      - boa tarde
+      - tudo bem?
 
-- intent: finalizacao
-  examples: |
-    - tchau
-    - adeus
+  - intent: finalizacao
+    examples: |
+      - tchau
+      - adeus
+      - obrigado, tchau
+      - finalizar
+      - encerrar
+      - não, obrigada
+
+  - intent: agradecimento
+    examples: |
+      - obrigado
+      - obrigada
+      - valeu
+      - muito obrigado
+
+  - intent: fazer_pedido
+    examples: |
+      - quero fazer um pedido
+      - comprar ovos
+      - fazer pedido
+      - gostaria de encomendar
+
+  - intent: visualizar_pedidos
+    examples: |
+      - ver meus pedidos
+      - rastrear pedido
+      - onde está meu pedido
+      - visualizar pedidos
+
+  - intent: falar_empresa
+    examples: |
+      - falar com atendente
+      - falar com suporte
+      - falar com a empresa
+      - contato humano
+
+  - intent: informar_produto
+    examples: |
+      - quero o [extra](produto)
+      - vou levar o [jumbo](produto)
+      - quero 1 caixa de [jumbo](produto)
+      - vou querer a duzia de [extra](produto)
+
+  - intent: informar_quantidade
+    examples: |
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - quero 2 caixas
+      - vou levar 5 unidades
+      - apenas 1
+
+  - intent: informar_rua
+    examples: |
+      - Rua das Flores
+      - Avenida Brasil
+      - Av Paulista
+      - Alameda dos Anjos
+      - Minha rua é a Voluntários da Pátria
+
+  - intent: informar_numero
+    examples: |
+      - número 123
+      - n 45
+      - 1020
+      - o número é 789
+      - código de cancelamento 204512
+      - meu código é 154622
+      - número do pedido 98374
+      - pedido 180898
+      - #180898          
+      - #117712          
+      - pedido #319398   
+      - 180898
+
+  - intent: informar_bairro
+    examples: |
+      - Centro
+      - Jardim Botânico
+      - Copacabana
+      - Bairro Novo
+      - Meu bairro é Vila Mariana
+
+  - intent: informar_cep
+    examples: |
+      - 12345-678
+      - 80010020
+      - Não sei
+      - nao sei o cep
+      - meu cep é 01311-200
+
+  - intent: informar_complemento
+    examples: |
+      - Apartamento 202
+      - Bloco B
+      - Não
+      - fundos
+      - sem complemento
+
+  - intent: informar_data
+    examples: |
+      - amanhã
+      - dia 25/05
+      - próxima sexta
+      - segunda-feira
+      - pode entregar no dia 30/05
+
+  - intent: informar_pagamento
+    examples: |
+      - vou pagar no [pix](pagamento)
+      - vai ser em [dinheiro](pagamento)
+      - [credito](pagamento)
+      - quero pagar no [debito](pagamento)
+
+  - intent: confirmar
+    examples: |
+      - sim
+      - confirmo
+      - está correto
+      - tudo certo
+      - sim, por favor
+
+  - intent: negar
+    examples: |
+      - não
+      - incorreto
+      - quero mudar
+      - não está certo
+      - preciso alterar algo
+
+  - intent: alterar_pedido
+    examples: |
+      - quero alterar o pedido
+      - mudar informação do meu pedido
+      - alterar dados de entrega
+      - quero mudar o [endereco](campo_alterar)
+      - preciso alterar o [endereco](campo_alterar) de entrega
+      - mude o [endereco](campo_alterar) por favor
+      - quero mudar a [data](campo_alterar)
+      - preciso alterar a [data](campo_alterar) de entrega
+      - mude a [data](campo_alterar) do agendamento
+
+  - intent: cancelar_pedido
+    examples: |
+      - quero cancelar meu pedido
+      - cancelamento de pedido
+      - excluir pedido
+      - cancela para mim
+
+  - intent: alterar_endereco_completo
+    examples: |
+      - quero mudar o endereço de entrega
+      - trocar local de entrega
+      - Rua das Palmeiras, 150, Centro
+      - Av Paulista 1000, apto 32, Bela Vista
+      - Mude para a Rua das Flores, 45, Bairro Novo
+
+  - intent: informar_endereco
+    examples: |
+      - Meu endereço é 
+      - Quero entregar na Avenida Central
+      - O endereço de entrega é este
