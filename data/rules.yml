@@ -1,51 +1,118 @@
 version: "3.1"
 
 rules:
-  - rule: Ativar saudação inicial
-    steps:
-      - intent: saudacao
-      - action: utter_saudacao
 
-  - rule: Falar com a empresa
-    steps:
-      - intent: falar_empresa
-      - action: utter_falar_empresa
+- rule: Ativar saudação inicial
+  steps:
+    - intent: saudacao
+    - action: utter_saudacao
 
-  - rule: Agradecimento do cliente
-    steps:
-      - intent: agradecimento
-      - action: utter_agradecimento
+- rule: Falar com a empresa
+  steps:
+    - intent: falar_empresa
+    - action: utter_falar_empresa
 
-  - rule: Despedida / Finalização
-    steps:
-      - intent: finalizacao
-      - action: utter_finalizacao
+- rule: Agradecimento do cliente
+  steps:
+    - intent: agradecimento
+    - action: utter_agradecimento
 
-  - rule: Ativar formulário de pedido
-    steps:
-      - intent: fazer_pedido
-      - action: fechar_pedido_form
-      - active_loop: fechar_pedido_form
+- rule: Despedida / Finalização
+  steps:
+    - intent: finalizacao
+    - action: utter_finalizacao
 
-  - rule: Submeter formulário e calcular valores
-    condition:
-      - active_loop: fechar_pedido_form
-    steps:
-      - action: fechar_pedido_form
-      - active_loop: null
-      - slot_was_set:
-          - requested_slot: null
-      - action: action_calcular_valores_pedido
-      - action: utter_conferir_pedido
+- rule: Ativar formulário de pedido
+  steps:
+    - intent: fazer_pedido
+    - action: fechar_pedido_form
+    - active_loop: fechar_pedido_form
 
-  - rule: Usuario clicou no botao Alterar do resumo
-    steps:
-      - intent: alterar_pedido
-      - action: utter_alteracao_pedido
 
-  - rule: Limpar o slot selecionado e reativar o loop do formulario imediatamente
-    steps:
-      - intent: mudar_informacao
-      - action: action_limpar_slot_para_alterar
-      - action: fechar_pedido_form
-      - active_loop: fechar_pedido_form
+- rule: Submeter formulário e calcular valores
+  condition:
+    - active_loop: fechar_pedido_form
+
+  steps:
+    - action: fechar_pedido_form
+    - active_loop: null
+
+    - slot_was_set:
+        - requested_slot: null
+
+    - action: action_calcular_valores_pedido
+    - action: utter_conferir_pedido
+
+- rule: Abrir menu de alteração
+  steps:
+    - intent: alterar_pedido
+    - action: utter_alteracao_pedido
+
+
+- rule: Alterar produto
+  steps:
+    - intent: alterar_produto
+    - action: action_limpar_slot_para_alterar
+    - action: fechar_pedido_form
+    - active_loop: fechar_pedido_form
+
+
+- rule: Alterar quantidade
+  steps:
+    - intent: alterar_quantidade
+    - action: action_limpar_slot_para_alterar
+    - action: fechar_pedido_form
+    - active_loop: fechar_pedido_form
+
+
+- rule: Alterar rua
+  steps:
+    - intent: alterar_rua
+    - action: action_limpar_slot_para_alterar
+    - action: fechar_pedido_form
+    - active_loop: fechar_pedido_form
+
+
+- rule: Alterar numero
+  steps:
+    - intent: alterar_numero
+    - action: action_limpar_slot_para_alterar
+    - action: fechar_pedido_form
+    - active_loop: fechar_pedido_form
+
+
+- rule: Alterar data
+  steps:
+    - intent: alterar_data
+    - action: action_limpar_slot_para_alterar
+    - action: fechar_pedido_form
+    - active_loop: fechar_pedido_form
+
+
+- rule: Alterar pagamento
+  steps:
+    - intent: alterar_pagamento
+    - action: action_limpar_slot_para_alterar
+    - action: fechar_pedido_form
+    - active_loop: fechar_pedido_form
+
+- rule: Visualizar pedidos
+  steps:
+    - intent: visualizar_pedidos
+    - action: utter_visualizar_pedidos
+    - action: action_buscar_pedidos_banco
+
+- rule: Iniciar cancelamento do pedido
+  steps:
+    - intent: cancelar_pedido
+    - action: utter_cancelar_pedido
+
+- rule: Confirmar cancelamento do pedido
+  steps:
+    - intent: informar_numero
+    - action: action_cancelar_pedido_banco
+
+- rule: Confirmar pedido
+  steps:
+    - intent: confirmar
+    - action: action_salvar_pedido_banco

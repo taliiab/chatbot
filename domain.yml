@@ -7,14 +7,12 @@ intents:
   - fazer_pedido
   - visualizar_pedidos
   - falar_empresa
-  - informar_produto
   - informar_quantidade
   - informar_rua
   - informar_numero
   - informar_bairro
   - informar_cep
   - informar_complemento
-  - informar_pagamento
   - informar_endereco
   - informar_data
   - confirmar
@@ -22,20 +20,26 @@ intents:
   - alterar_pedido
   - cancelar_pedido
   - alterar_endereco_completo
-  - mudar_informacao
+  - pagamento_pix
+  - pagamento_dinheiro
+  - pagamento_credito
+  - pagamento_debito
+  - produto_extra
+  - produto_jumbo
+  - alterar_produto
+  - alterar_quantidade
+  - alterar_rua
+  - alterar_numero
+  - alterar_data
+  - alterar_pagamento
 
-entities:
-  - produto
-  - pagamento
-  - campo_alterar
+entities: []
 
 actions:
   - action_calcular_valores_pedido
   - action_salvar_pedido_banco
   - action_buscar_pedidos_banco
-  - action_resetar_campos_form
   - action_cancelar_pedido_banco
-  - action_resetar_slots_endereco
   - action_limpar_slot_para_alterar
 
 slots:
@@ -44,14 +48,15 @@ slots:
     influence_conversation: true
     mappings:
       - type: from_intent
+        intent: produto_extra
         value: extra
-        intent: informar_produto
         conditions:
           - active_loop: fechar_pedido_form
             requested_slot: produto
+
       - type: from_intent
+        intent: produto_jumbo
         value: jumbo
-        intent: informar_produto
         conditions:
           - active_loop: fechar_pedido_form
             requested_slot: produto
@@ -124,26 +129,29 @@ slots:
     influence_conversation: true
     mappings:
       - type: from_intent
+        intent: pagamento_pix
         value: pix
-        intent: informar_pagamento
         conditions:
           - active_loop: fechar_pedido_form
             requested_slot: pagamento
+
       - type: from_intent
+        intent: pagamento_dinheiro
         value: dinheiro
-        intent: informar_pagamento
         conditions:
           - active_loop: fechar_pedido_form
             requested_slot: pagamento
+
       - type: from_intent
+        intent: pagamento_credito
         value: credito
-        intent: informar_pagamento
         conditions:
           - active_loop: fechar_pedido_form
             requested_slot: pagamento
+
       - type: from_intent
+        intent: pagamento_debito
         value: debito
-        intent: informar_pagamento
         conditions:
           - active_loop: fechar_pedido_form
             requested_slot: pagamento
@@ -164,8 +172,29 @@ slots:
     type: text
     influence_conversation: true
     mappings:
-      - type: from_entity
-        entity: campo_alterar
+      - type: from_intent
+        intent: alterar_produto
+        value: produto
+
+      - type: from_intent
+        intent: alterar_quantidade
+        value: quantidade
+
+      - type: from_intent
+        intent: alterar_rua
+        value: rua
+
+      - type: from_intent
+        intent: alterar_numero
+        value: numero
+
+      - type: from_intent
+        intent: alterar_data
+        value: data
+
+      - type: from_intent
+        intent: alterar_pagamento
+        value: pagamento
 
 forms:
   fechar_pedido_form:
@@ -207,12 +236,13 @@ responses:
         2️⃣ Ovos tipo Jumbo (10 unidades) — R$ 19,00
 
         📑 Lembrete:
-        Na compra de 5 duas (ou 5 caixas jumbo), a entrega será gratuita! 🚚
+        Na compra de 5 dúzias (ou 5 caixas jumbo), a entrega será gratuita! 🚚
       buttons:
         - title: "1️⃣ Dúzia Extra"
-          payload: '/informar_produto{"produto": "extra"}'
+          payload: "/produto_extra"
+
         - title: "2️⃣ Jumbo"
-          payload: '/informar_produto{"produto": "jumbo"}'
+          payload: "/produto_jumbo"
 
   utter_ask_quantidade:
     - text: |
@@ -237,21 +267,22 @@ responses:
 
   utter_ask_data:
     - text: |
-        📅 Certo!
-
-        Qual data você deseja para a entrega?
+        📅 Qual data você deseja para a entrega?
 
   utter_ask_pagamento:
     - text: "💳 Qual será a forma de pagamento?"
       buttons:
         - title: "Pix"
-          payload: '/informar_pagamento{"pagamento":"pix"}'
+          payload: "/pagamento_pix"
+
         - title: "Dinheiro"
-          payload: '/informar_pagamento{"pagamento":"dinheiro"}'
+          payload: "/pagamento_dinheiro"
+
         - title: "Crédito"
-          payload: '/informar_pagamento{"pagamento":"credito"}'
+          payload: "/pagamento_credito"
+
         - title: "Débito"
-          payload: '/informar_pagamento{"pagamento":"debito"}'
+          payload: "/pagamento_debito"
 
   utter_conferir_pedido:
     - text: |
@@ -291,17 +322,22 @@ responses:
     - text: "Qual informação você deseja alterar?"
       buttons:
         - title: "🥚 Produto"
-          payload: '/mudar_informacao{"campo_alterar": "produto"}'
+          payload: "/alterar_produto"
+
         - title: "📦 Quantidade"
-          payload: '/mudar_informacao{"campo_alterar": "quantidade"}'
+          payload: "/alterar_quantidade"
+
         - title: "🏡 Rua"
-          payload: '/mudar_informacao{"campo_alterar": "rua"}'
+          payload: "/alterar_rua"
+
         - title: "🔢 Número"
-          payload: '/mudar_informacao{"campo_alterar": "numero"}'
+          payload: "/alterar_numero"
+
         - title: "📅 Data"
-          payload: '/mudar_informacao{"campo_alterar": "data"}'
+          payload: "/alterar_data"
+
         - title: "💳 Pagamento"
-          payload: '/mudar_informacao{"campo_alterar": "pagamento"}'
+          payload: "/alterar_pagamento"
 
   utter_alteracao_endereco:
     - text: "Certo! Digite seu novo endereço de entrega."

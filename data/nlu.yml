@@ -179,3 +179,33 @@ nlu:
       - Meu endereço é 
       - Quero entregar na Avenida Central
       - O endereço de entrega é este
+
+  - intent: pagamento_pix
+    examples: |
+      - pix
+
+  - intent: pagamento_dinheiro
+    examples: |
+      - dinheiro
+
+  - intent: pagamento_credito
+    examples: |
+      - crédito
+      - credito
+
+  - intent: pagamento_debito
+    examples: |
+      - débito
+      - debito
+
+  - intent: produto_extra
+    examples: |
+      - extra
+      - dúzia extra
+      - quero extra
+
+  - intent: produto_jumbo
+    examples: |
+      - jumbo
+      - ovos jumbo
+      - quero jumbo

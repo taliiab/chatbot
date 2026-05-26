@@ -19,22 +19,18 @@ class ActionCalcularValoresPedido(Action):
         nome_produto = tracker.get_slot("produto")
         qtd_texto = tracker.get_slot("quantidade")
 
-        # Tratamento seguro da Quantidade
         try:
             quantidade = int(''.join(filter(str.isdigit, str(qtd_texto))))
         except Exception:
             quantidade = 1
 
-        # Regra de negócio dos produtos alinhada ao banco (Id 1 = Extra, Id 2 = Jumbo)
         id_produto = 1 if nome_produto and nome_produto.lower() == "extra" else 2
         preco_unitario = 18.00 if id_produto == 1 else 19.00
         
-        # Regra do frete grátis (5 ou mais unidades)
         custo_frete = 0.00 if quantidade >= 5 else 10.00
         subtotal = preco_unitario * quantidade
         total = subtotal + custo_frete
 
-        # Formata os valores para exibição no padrão brasileiro
         valor_entrega_str = f"{custo_frete:.2f}".replace('.', ',')
         valor_total_str = f"{total:.2f}".replace('.', ',')
 
@@ -43,24 +39,42 @@ class ActionCalcularValoresPedido(Action):
             SlotSet("valor_total", valor_total_str)
         ]
 
-
 class ActionLimparSlotParaAlterar(Action):
-    """
-    Esta action limpa o slot que o usuário deseja alterar, forçando 
-    o formulário a perguntar por ele novamente no próximo passo.
-    """
+
     def name(self) -> Text:
         return "action_limpar_slot_para_alterar"
 
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        campo = tracker.get_slot("campo_alterar")
-        
-        if campo:
-            dispatcher.utter_message(text=f"Certo, vamos corrigir o campo: *{campo}*.")
-            return [SlotSet(campo, None), SlotSet("campo_alterar", None)]
-        
-        return []
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any]
+    ) -> List[Dict[Text, Any]]:
 
+        intent = tracker.latest_message.get("intent", {}).get("name")
+
+        mapa_campos = {
+            "alterar_produto": "produto",
+            "alterar_quantidade": "quantidade",
+            "alterar_rua": "rua",
+            "alterar_numero": "numero",
+            "alterar_data": "data",
+            "alterar_pagamento": "pagamento"
+        }
+
+        campo = mapa_campos.get(intent)
+
+        if not campo:
+            dispatcher.utter_message(
+                text="Não consegui identificar o que você deseja alterar."
+            )
+            return []
+
+        dispatcher.utter_message(
+            text=f"✏️ Certo! Vamos alterar: {campo}"
+        )
+
+        return [SlotSet(campo, None)]
 
 class ActionSalvarPedidoBanco(Action):
     def name(self) -> Text:
@@ -78,7 +92,6 @@ class ActionSalvarPedidoBanco(Action):
         cep = tracker.get_slot("cep")
         complemento = tracker.get_slot("complemento")
 
-        # Blindagem contra desvios de fluxo: evita salvar dados obrigatórios nulos no banco
         if not rua or not numero or not bairro:
             dispatcher.utter_message(
                 text="⚠️ Ops! Notei que os dados de endereço para a entrega estão incompletos. Vamos tentar preencher novamente?"
@@ -112,32 +125,27 @@ class ActionSalvarPedidoBanco(Action):
             conn = obter_conexao()
             cur = conn.cursor()
 
-            # 1. Garante a existência do cliente
             cur.execute("""
                 INSERT INTO clientes (id_whatsapp, nome) 
                 VALUES (%s, %s) 
                 ON CONFLICT (id_whatsapp) DO NOTHING;
             """, (id_whatsapp, "Cliente WhatsApp"))
             
-            # 2. Cria o registro do pedido
             cur.execute("""
                 INSERT INTO pedidos (id, id_cliente, data_entrega, status_entrega, custo_frete, subtotal, total) 
                 VALUES (%s, %s, %s, 'Pendente', %s, %s, %s);
             """, (id_pedido, id_whatsapp, data_entrega, custo_frete, subtotal, total))
 
-            # 3. Associa o item ao pedido
             cur.execute("""
                 INSERT INTO itens_pedido (id_pedido, id_produto, quantidade, preco_unitario, valor_item) 
                 VALUES (%s, %s, %s, %s, %s);
             """, (id_pedido, id_produto, quantidade, preco_unitario, subtotal))
 
-            # 4. Mapeamento explícito de colunas incluindo o id_cliente
             cur.execute("""
                 INSERT INTO endereco_entrega (id_pedido, id_cliente, rua, numero, bairro, cep, complemento) 
                 VALUES (%s, %s, %s, %s, %s, %s, %s);
             """, (id_pedido, id_whatsapp, rua, numero, bairro, cep, complemento))
 
-            # 5. Registra a transação de pagamento
             cur.execute("""
                 INSERT INTO pagamentos (id_pedido, metodo_pagamento, valor, status_pagamento) 
                 VALUES (%s, %s, %s, 'Pendente');
@@ -145,7 +153,6 @@ class ActionSalvarPedidoBanco(Action):
 
             conn.commit()
 
-            # 💬 Mensagem enviada antes de limpar a memória para garantir o retorno no chat
             dispatcher.utter_message(text="✅ Seu pedido foi realizado com SUCESSO!")
             dispatcher.utter_message(text="Agora é só aguardar, nossa equipe já está preparando! 🐔🥚\nAgradecemos pela preferência! 💛")
             
@@ -158,7 +165,6 @@ class ActionSalvarPedidoBanco(Action):
             if cur: cur.close()
             if conn: conn.close()
         
-        # Limpa todos os slots de uma vez usando o evento nativo do Rasa
         return [AllSlotsReset()]
 
 
