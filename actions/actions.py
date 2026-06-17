@@ -8,7 +8,7 @@ from rasa_sdk.executor import CollectingDispatcher
 def obter_conexao():
     return psycopg2.connect(
         dbname="rasa", user="postgres", password="admin",
-        host="localhost", port="5432"
+        host="postgres", port="5432"
     )
 
 class ActionCalcularValoresPedido(Action):

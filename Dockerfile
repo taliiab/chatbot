@@ -7,6 +7,8 @@ USER root
 COPY . /app
 COPY docker/start-rasa.sh /usr/local/bin/start-rasa.sh
 
+RUN sed -i 's/\r$//' /usr/local/bin/start-rasa.sh
+
 RUN chmod +x /usr/local/bin/start-rasa.sh
 
 EXPOSE 5005
