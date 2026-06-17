@@ -5,3 +5,11 @@ action_endpoint:
   url: "http://actions:5055/webhook"
 
 # Tracker store which is used to store the conversations.
+tracker_store:
+  type: sql
+  dialect: postgresql
+  url: ${POSTGRES_HOST}
+  port: ${POSTGRES_PORT}
+  db: ${POSTGRES_DB}
+  username: ${POSTGRES_USER}
+  password: ${POSTGRES_PASSWORD}
