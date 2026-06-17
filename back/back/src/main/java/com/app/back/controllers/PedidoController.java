@@ -27,28 +27,30 @@ public class PedidoController {
         String placeholdersPagamento = String.join(",", pagamento.stream().map(p -> "?").toArray(String[]::new));
 
         String sql = "SELECT p.id AS id, " +
-                "       p.id_cliente AS id_cliente, " +
-                "       p.status_entrega AS status_entrega, " +
-                "       COALESCE(SUM(i.quantidade), 0) AS quantidade, " +
-                "       pag.metodo_pagamento AS metodo_pagamento, " +
-                "       p.subtotal AS subtotal, " +
-                "       p.custo_frete AS custo_frete, " +
-                "       p.total AS total, " +
-                "       COALESCE(pag.status_pagamento, 'Pendente') AS status_pagamento, " +
-                "       c.nome AS nome, " +
-                "       e.rua AS rua, " +
-                "       e.numero AS numero, " +
-                "       e.complemento AS complemento, " +
-                "       e.bairro AS bairro " +
-                "FROM pedidos p " +
-                "LEFT JOIN clientes c ON p.id_cliente = c.id_whatsapp " +
-                "LEFT JOIN endereco_entrega e ON p.id = e.id_pedido " +
-                "LEFT JOIN pagamentos pag ON p.id = pag.id_pedido " +
-                "LEFT JOIN itens_pedido i ON p.id = i.id_pedido " +
-                "WHERE ((p.data_entrega BETWEEN ? AND ?) OR (p.data_entrega IS NULL AND p.data_criacao BETWEEN ? AND ?)) " +
-                "  AND p.status_entrega IN (" + placeholdersStatus + ") " +
-                "  AND (pag.status_pagamento IN (" + placeholdersPagamento + ") OR pag.status_pagamento IS NULL) " +
-                "GROUP BY p.id, pag.metodo_pagamento, pag.status_pagamento, c.nome, e.rua, e.numero, e.complemento, e.bairro";
+             "       p.id_cliente AS id_cliente, " +
+             "       p.status_entrega AS status_entrega, " +
+             "       COALESCE(SUM(i.quantidade), 0) AS quantidade, " +
+             "       STRING_AGG(DISTINCT prod.nome, ', ') AS nome_produto, " + // <--- ADICIONE ESTA LINHA
+             "       pag.metodo_pagamento AS metodo_pagamento, " +
+             "       p.subtotal AS subtotal, " +
+             "       p.custo_frete AS custo_frete, " +
+             "       p.total AS total, " +
+             "       COALESCE(pag.status_pagamento, 'Pendente') AS status_pagamento, " +
+             "       c.nome AS nome, " +
+             "       e.rua AS rua, " +
+             "       e.numero AS numero, " +
+             "       e.complemento AS complemento, " +
+             "       e.bairro AS bairro " +
+             "FROM pedidos p " +
+             "LEFT JOIN clientes c ON p.id_cliente = c.id_whatsapp " +
+             "LEFT JOIN endereco_entrega e ON p.id = e.id_pedido " +
+             "LEFT JOIN pagamentos pag ON p.id = pag.id_pedido " +
+             "LEFT JOIN itens_pedido i ON p.id = i.id_pedido " +
+             "LEFT JOIN produtos prod ON i.id_produto = prod.id " + 
+             "WHERE ((p.data_entrega BETWEEN ? AND ?) OR (p.data_entrega IS NULL AND p.data_criacao BETWEEN ? AND ?)) " +
+             "  AND p.status_entrega IN (" + placeholdersStatus + ") " +
+             "  AND (pag.status_pagamento IN (" + placeholdersPagamento + ") OR pag.status_pagamento IS NULL) " +
+             "GROUP BY p.id, pag.metodo_pagamento, pag.status_pagamento, c.nome, e.rua, e.numero, e.complemento, e.bairro";
 
         List<Object> params = new ArrayList<>();
 
