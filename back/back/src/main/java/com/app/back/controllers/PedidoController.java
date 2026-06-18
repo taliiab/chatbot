@@ -111,9 +111,18 @@ public class PedidoController {
             double total = dados.get("total") != null ? Double.parseDouble(dados.get("total").toString()) : subtotal;
 
             Object dataEntregaInput = dados.get("data_entrega");
-            java.sql.Timestamp dataEntrega = (dataEntregaInput != null) 
-                ? java.sql.Timestamp.valueOf(dataEntregaInput.toString()) 
-                : null;
+            java.sql.Timestamp dataEntrega = null;
+
+            if (dataEntregaInput != null && !dataEntregaInput.toString().isEmpty()) {
+                String dataStr = dataEntregaInput.toString();
+                if (dataStr.length() == 10) {
+                    dataStr += " 00:00:00";
+                }
+                try {
+                    dataEntrega = java.sql.Timestamp.valueOf(dataStr);
+                } catch (IllegalArgumentException e) {
+                    dataEntrega = java.sql.Timestamp.valueOf(java.time.LocalDateTime.parse(dataStr.replace("Z", "")));
+            }
 
             String sqlPedido = "INSERT INTO pedidos (id, id_cliente, status_entrega, subtotal, total, data_criacao, data_entrega) VALUES (?, ?, 'Pendente', ?, ?, ?, ?)";
             jdbcTemplate.update(sqlPedido, idPedido, idCliente, subtotal, total, java.time.LocalDateTime.now(), dataEntrega);
