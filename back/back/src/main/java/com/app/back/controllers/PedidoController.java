@@ -109,9 +109,12 @@ public class PedidoController {
             String idPedido = dados.get("id_pedido").toString();
             Object subtotalObj = dados.get("subtotal");
             double subtotal = subtotalObj != null ? Double.parseDouble(subtotalObj.toString()) : 0.0;
+            
+            Object totalObj = dados.get("total") != null ? dados.get("total") : dados.get("subtotal");
+            double total = totalObj != null ? Double.parseDouble(totalObj.toString()) : subtotal;
 
-            String sqlPedido = "INSERT INTO pedidos (id, id_cliente, status_entrega, subtotal) VALUES (?, ?, 'Pendente', ?)";
-            jdbcTemplate.update(sqlPedido, idPedido, idCliente, subtotal);
+            String sqlPedido = "INSERT INTO pedidos (id, id_cliente, status_entrega, subtotal, total) VALUES (?, ?, 'Pendente', ?, ?)";
+            jdbcTemplate.update(sqlPedido, idPedido, idCliente, subtotal, total);
 
             Map<String, Object> endereco = (Map<String, Object>) dados.get("endereco");
             String sqlEndereco = "INSERT INTO endereco_entrega (id_pedido, id_cliente, rua, numero, bairro, cep, complemento) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -128,9 +131,6 @@ public class PedidoController {
 
                 jdbcTemplate.update(sqlItem, idPedido, idProduto, quantidade, precoUnitario, valorItem);
             }
-
-            Object totalObj = dados.get("total") != null ? dados.get("total") : dados.get("subtotal");
-            double total = totalObj != null ? Double.parseDouble(totalObj.toString()) : 0.0;
 
             jdbcTemplate.update("INSERT INTO pagamentos (id_pedido, status_pagamento, metodo_pagamento, valor) VALUES (?, 'Pendente', ?, ?)",
                     idPedido, dados.get("metodo_pagamento"), total);
