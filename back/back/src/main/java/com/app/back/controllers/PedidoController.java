@@ -143,16 +143,5 @@ public class PedidoController {
         }
     }
 
-    @GetMapping("/produtos")
-    public ResponseEntity<List<Map<String, Object>>> listarProdutosParaVenda() {
-        try {
-            String sql = "SELECT id, nome, preco, ativo FROM produtos WHERE ativo = true ORDER BY nome ASC";
-            List<Map<String, Object>> produtos = jdbcTemplate.queryForList(sql);
-            
-            return ResponseEntity.ok(produtos);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(null);
-        }
-    }
+
 }
