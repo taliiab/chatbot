@@ -97,50 +97,6 @@ public class PedidoController {
         return ResponseEntity.ok(Map.of("status", "sucesso", "mensagem", "Pedido cancelado com sucesso."));
     }
 
-    @PostMapping("/pedidos/confirmar-pagamento")
-    public ResponseEntity<?> confirmarPagamento(@RequestParam String id) {
-        try {
-            String sqlCheckStatus = "SELECT status_entrega FROM pedidos WHERE id = ?";
-            String statusEntrega = jdbcTemplate.queryForObject(sqlCheckStatus, String.class, id);
-
-            if ("Cancelado".equalsIgnoreCase(statusEntrega)) {
-                return ResponseEntity.badRequest().body(Map.of("status", "erro", "mensagem", "Não é possível pagar um pedido cancelado."));
-            }
-
-            String sqlCheck = "SELECT COUNT(*) FROM pagamentos WHERE id_pedido = ?";
-            Integer count = jdbcTemplate.queryForObject(sqlCheck, Integer.class, id);
-
-            if (count != null && count > 0) {
-                String sqlUpdate = "UPDATE pagamentos SET status_pagamento = 'Aprovado' WHERE id_pedido = ?";
-                jdbcTemplate.update(sqlUpdate, id);
-            } else {
-                String sqlInsert = "INSERT INTO pagamentos (id_pedido, metodo_pagamento, status_pagamento) VALUES (?, 'Pix', 'Aprovado')";
-                jdbcTemplate.update(sqlInsert, id);
-            }
-
-            return ResponseEntity.ok(Map.of("status", "sucesso", "mensagem", "Pagamento aprovado com sucesso."));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body(Map.of(
-                    "status", "erro",
-                    "mensagem", "Erro no banco de dados ao processar pagamento. Verifique o ID do pedido."
-            ));
-        }
-    }
-
-    @PostMapping("/pedidos/confirmar-entrega")
-    public ResponseEntity<?> confirmarEntrega(@RequestParam String id) {
-        String sql = "UPDATE pedidos SET status_entrega = 'Entregue' WHERE id = ? AND status_entrega NOT IN ('Cancelado', 'Entregue')";
-        int linhasAfetadas = jdbcTemplate.update(sql, id);
-
-        if (linhasAfetadas == 0) {
-            return ResponseEntity.badRequest().body(Map.of("status", "erro", "mensagem", "Este pedido está cancelado ou já foi entregue."));
-        }
-        return ResponseEntity.ok(Map.of("status", "sucesso", "mensagem", "Pedido marcado como entregue."));
-    }
-
-
     @PostMapping("/pedidos/cadastrar")
     @Transactional
     public ResponseEntity<?> cadastrarPedidoCompleto(@RequestBody Map<String, Object> dados) {
@@ -150,9 +106,12 @@ public class PedidoController {
             String sqlCliente = "INSERT INTO clientes (id_whatsapp, nome) VALUES (?, ?) ON CONFLICT (id_whatsapp) DO UPDATE SET nome = EXCLUDED.nome";
             jdbcTemplate.update(sqlCliente, idCliente, cliente.get("nome"));
 
-            String idPedido = dados.get("id_pedido").toString(); // Supondo que você gera o ID no front ou usa um UUID
+            String idPedido = dados.get("id_pedido").toString();
+            Object subtotalObj = dados.get("subtotal");
+            double subtotal = subtotalObj != null ? Double.parseDouble(subtotalObj.toString()) : 0.0;
+
             String sqlPedido = "INSERT INTO pedidos (id, id_cliente, status_entrega, subtotal) VALUES (?, ?, 'Pendente', ?)";
-            jdbcTemplate.update(sqlPedido, idPedido, idCliente, dados.get("subtotal"));
+            jdbcTemplate.update(sqlPedido, idPedido, idCliente, subtotal);
 
             Map<String, Object> endereco = (Map<String, Object>) dados.get("endereco");
             String sqlEndereco = "INSERT INTO endereco_entrega (id_pedido, id_cliente, rua, numero, bairro, cep, complemento) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -162,17 +121,38 @@ public class PedidoController {
             List<Map<String, Object>> itens = (List<Map<String, Object>>) dados.get("itens");
             String sqlItem = "INSERT INTO itens_pedido (id_pedido, id_produto, quantidade, preco_unitario, valor_item) VALUES (?, ?, ?, ?, ?)";
             for (Map<String, Object> item : itens) {
-                jdbcTemplate.update(sqlItem, idPedido, item.get("id_produto"), item.get("quantidade"),
-                        item.get("preco_unitario"), item.get("valor_item"));
+                int idProduto = Integer.parseInt(item.get("id_produto").toString());
+                int quantidade = Integer.parseInt(item.get("quantidade").toString());
+                double precoUnitario = Double.parseDouble(item.get("preco_unitario").toString());
+                double valorItem = Double.parseDouble(item.get("valor_item").toString());
+
+                jdbcTemplate.update(sqlItem, idPedido, idProduto, quantidade, precoUnitario, valorItem);
             }
 
+            Object totalObj = dados.get("total") != null ? dados.get("total") : dados.get("subtotal");
+            double total = totalObj != null ? Double.parseDouble(totalObj.toString()) : 0.0;
+
             jdbcTemplate.update("INSERT INTO pagamentos (id_pedido, status_pagamento, metodo_pagamento, valor) VALUES (?, 'Pendente', ?, ?)",
-                    idPedido, dados.get("metodo_pagamento"), dados.get("total"));
+                    idPedido, dados.get("metodo_pagamento"), total);
 
             return ResponseEntity.ok(Map.of("status", "sucesso", "mensagem", "Pedido realizado com sucesso!"));
 
         } catch (Exception e) {
+            e.printStackTrace(); 
             return ResponseEntity.badRequest().body(Map.of("status", "erro", "mensagem", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/produtos")
+    public ResponseEntity<List<Map<String, Object>>> listarProdutosParaVenda() {
+        try {
+            String sql = "SELECT id, nome, preco, ativo FROM produtos WHERE ativo = true ORDER BY nome ASC";
+            List<Map<String, Object>> produtos = jdbcTemplate.queryForList(sql);
+            
+            return ResponseEntity.ok(produtos);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(null);
         }
     }
 }
