@@ -17,7 +17,7 @@ public class ConfiguracaoController {
 
     @GetMapping("/produtos")
     public ResponseEntity<List<Map<String, Object>>> listarProdutos() {
-        String sql = "SELECT nome, preco FROM produtos";
+        String sql = "SELECT id, nome, preco FROM produtos";
         List<Map<String, Object>> produtos = jdbcTemplate.queryForList(sql);
         return ResponseEntity.ok(produtos);
     }
