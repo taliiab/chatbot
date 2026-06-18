@@ -107,14 +107,16 @@ public class PedidoController {
             jdbcTemplate.update(sqlCliente, idCliente, cliente.get("nome"));
 
             String idPedido = dados.get("id_pedido").toString();
-            Object subtotalObj = dados.get("subtotal");
-            double subtotal = subtotalObj != null ? Double.parseDouble(subtotalObj.toString()) : 0.0;
-            
-            Object totalObj = dados.get("total") != null ? dados.get("total") : dados.get("subtotal");
-            double total = totalObj != null ? Double.parseDouble(totalObj.toString()) : subtotal;
+            double subtotal = dados.get("subtotal") != null ? Double.parseDouble(dados.get("subtotal").toString()) : 0.0;
+            double total = dados.get("total") != null ? Double.parseDouble(dados.get("total").toString()) : subtotal;
 
-            String sqlPedido = "INSERT INTO pedidos (id, id_cliente, status_entrega, subtotal, total) VALUES (?, ?, 'Pendente', ?, ?)";
-            jdbcTemplate.update(sqlPedido, idPedido, idCliente, subtotal, total);
+            Object dataEntregaInput = dados.get("data_entrega");
+            java.sql.Timestamp dataEntrega = (dataEntregaInput != null) 
+                ? java.sql.Timestamp.valueOf(dataEntregaInput.toString()) 
+                : null;
+
+            String sqlPedido = "INSERT INTO pedidos (id, id_cliente, status_entrega, subtotal, total, data_criacao, data_entrega) VALUES (?, ?, 'Pendente', ?, ?, ?, ?)";
+            jdbcTemplate.update(sqlPedido, idPedido, idCliente, subtotal, total, java.time.LocalDateTime.now(), dataEntrega);
 
             Map<String, Object> endereco = (Map<String, Object>) dados.get("endereco");
             String sqlEndereco = "INSERT INTO endereco_entrega (id_pedido, id_cliente, rua, numero, bairro, cep, complemento) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -124,12 +126,11 @@ public class PedidoController {
             List<Map<String, Object>> itens = (List<Map<String, Object>>) dados.get("itens");
             String sqlItem = "INSERT INTO itens_pedido (id_pedido, id_produto, quantidade, preco_unitario, valor_item) VALUES (?, ?, ?, ?, ?)";
             for (Map<String, Object> item : itens) {
-                int idProduto = Integer.parseInt(item.get("id_produto").toString());
-                int quantidade = Integer.parseInt(item.get("quantidade").toString());
-                double precoUnitario = Double.parseDouble(item.get("preco_unitario").toString());
-                double valorItem = Double.parseDouble(item.get("valor_item").toString());
-
-                jdbcTemplate.update(sqlItem, idPedido, idProduto, quantidade, precoUnitario, valorItem);
+                jdbcTemplate.update(sqlItem, idPedido, 
+                    Integer.parseInt(item.get("id_produto").toString()), 
+                    Integer.parseInt(item.get("quantidade").toString()), 
+                    Double.parseDouble(item.get("preco_unitario").toString()), 
+                    Double.parseDouble(item.get("valor_item").toString()));
             }
 
             jdbcTemplate.update("INSERT INTO pagamentos (id_pedido, status_pagamento, metodo_pagamento, valor) VALUES (?, 'Pendente', ?, ?)",
@@ -137,11 +138,26 @@ public class PedidoController {
 
             return ResponseEntity.ok(Map.of("status", "sucesso", "mensagem", "Pedido realizado com sucesso!"));
 
-        } catch (Exception e) {
-            e.printStackTrace(); 
-            return ResponseEntity.badRequest().body(Map.of("status", "erro", "mensagem", e.getMessage()));
-        }
+    } catch (Exception e) {
+        e.printStackTrace(); 
+        return ResponseEntity.badRequest().body(Map.of("status", "erro", "mensagem", e.getMessage()));
+    }
+}
+
+    @PostMapping("/pedidos/confirmar-pagamento")
+    public ResponseEntity<?> confirmarPagamento(@RequestParam String id) {
+        String sql = "UPDATE pagamentos SET status_pagamento = 'Aprovado' WHERE id_pedido = ?";
+        int updated = jdbcTemplate.update(sql, id);
+        if (updated == 0) return ResponseEntity.badRequest().body("Pedido não encontrado");
+        return ResponseEntity.ok(Map.of("status", "sucesso"));
     }
 
+    @PostMapping("/pedidos/confirmar-entrega")
+    public ResponseEntity<?> confirmarEntrega(@RequestParam String id) {
+        String sql = "UPDATE pedidos SET status_entrega = 'Entregue' WHERE id = ?";
+        int updated = jdbcTemplate.update(sql, id);
+        if (updated == 0) return ResponseEntity.badRequest().body("Pedido não encontrado");
+        return ResponseEntity.ok(Map.of("status", "sucesso"));
+    }
 
 }
