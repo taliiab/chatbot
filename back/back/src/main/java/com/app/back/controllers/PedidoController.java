@@ -98,59 +98,68 @@ public class PedidoController {
     }
 
     @PostMapping("/pedidos/cadastrar")
-@Transactional
-public ResponseEntity<?> cadastrarPedidoCompleto(@RequestBody Map<String, Object> dados) {
-    try {
-        Map<String, Object> cliente = (Map<String, Object>) dados.get("cliente");
-        String idCliente = (String) cliente.get("id_whatsapp");
-        String sqlCliente = "INSERT INTO clientes (id_whatsapp, nome) VALUES (?, ?) ON CONFLICT (id_whatsapp) DO UPDATE SET nome = EXCLUDED.nome";
-        jdbcTemplate.update(sqlCliente, idCliente, cliente.get("nome"));
+    @Transactional
+    public ResponseEntity<?> cadastrarPedidoCompleto(@RequestBody Map<String, Object> dados) {
+        try {
+            Map<String, Object> cliente = (Map<String, Object>) dados.get("cliente");
+            String idCliente = (String) cliente.get("id_whatsapp");
+            String sqlCliente = "INSERT INTO clientes (id_whatsapp, nome) VALUES (?, ?) ON CONFLICT (id_whatsapp) DO UPDATE SET nome = EXCLUDED.nome";
+            jdbcTemplate.update(sqlCliente, idCliente, cliente.get("nome"));
 
-        String idPedido = dados.get("id_pedido").toString();
-        double subtotal = dados.get("subtotal") != null ? Double.parseDouble(dados.get("subtotal").toString()) : 0.0;
-        double total = dados.get("total") != null ? Double.parseDouble(dados.get("total").toString()) : subtotal;
+            String idPedido = dados.get("id_pedido").toString();
+            double subtotal = dados.get("subtotal") != null ? Double.parseDouble(dados.get("subtotal").toString()) : 0.0;
+            double total = dados.get("total") != null ? Double.parseDouble(dados.get("total").toString()) : subtotal;
+            double custoFrete = dados.get("custo_frete") != null ? Double.parseDouble(dados.get("custo_frete").toString()) : 0.0;
 
-        Object dataEntregaInput = dados.get("data_entrega");
-        java.sql.Timestamp dataEntrega = null;
+            Object dataEntregaInput = dados.get("data_entrega");
+            java.sql.Timestamp dataEntrega = null;
 
-        if (dataEntregaInput != null && !dataEntregaInput.toString().trim().isEmpty()) {
-            try {
-                String d = dataEntregaInput.toString().trim();
-                if (d.length() == 10) d += " 00:00:00";
-                dataEntrega = java.sql.Timestamp.valueOf(d);
-            } catch (Exception e) {
-                System.err.println("Erro ao converter data: " + e.getMessage());
+            if (dataEntregaInput != null && !dataEntregaInput.toString().trim().isEmpty()) {
+                try {
+                    String d = dataEntregaInput.toString().trim();
+                    if (d.length() == 10) d += " 00:00:00";
+                    dataEntrega = java.sql.Timestamp.valueOf(d);
+                } catch (Exception e) {
+                    System.err.println("Erro ao converter data: " + e.getMessage());
+                }
             }
+
+            String sqlPedido = "INSERT INTO pedidos (id, id_cliente, status_entrega, subtotal, total, data_criacao, data_entrega, custo_frete) VALUES (?, ?, 'Pendente', ?, ?, ?, ?, ?)";
+            jdbcTemplate.update(sqlPedido, 
+                idPedido, 
+                idCliente, 
+                subtotal, 
+                total, 
+                java.time.LocalDateTime.now(), 
+                dataEntrega, 
+                custoFrete
+            );
+
+            Map<String, Object> endereco = (Map<String, Object>) dados.get("endereco");
+            String sqlEndereco = "INSERT INTO endereco_entrega (id_pedido, id_cliente, rua, numero, bairro, cep, complemento) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            jdbcTemplate.update(sqlEndereco, idPedido, idCliente, endereco.get("rua"), endereco.get("numero"),
+                    endereco.get("bairro"), endereco.get("cep"), endereco.get("complemento"));
+
+            List<Map<String, Object>> itens = (List<Map<String, Object>>) dados.get("itens");
+            String sqlItem = "INSERT INTO itens_pedido (id_pedido, id_produto, quantidade, preco_unitario, valor_item) VALUES (?, ?, ?, ?, ?)";
+            for (Map<String, Object> item : itens) {
+                jdbcTemplate.update(sqlItem, idPedido, 
+                    Integer.parseInt(item.get("id_produto").toString()), 
+                    Integer.parseInt(item.get("quantidade").toString()), 
+                    Double.parseDouble(item.get("preco_unitario").toString()), 
+                    Double.parseDouble(item.get("valor_item").toString()));
+            }
+
+            jdbcTemplate.update("INSERT INTO pagamentos (id_pedido, status_pagamento, metodo_pagamento, valor) VALUES (?, 'Pendente', ?, ?)",
+                    idPedido, dados.get("metodo_pagamento"), total);
+
+            return ResponseEntity.ok(Map.of("status", "sucesso", "mensagem", "Pedido realizado com sucesso!"));
+
+        } catch (Exception e) {
+            e.printStackTrace(); 
+            return ResponseEntity.badRequest().body(Map.of("status", "erro", "mensagem", e.getMessage()));
         }
-
-        String sqlPedido = "INSERT INTO pedidos (id, id_cliente, status_entrega, subtotal, total, data_criacao, data_entrega) VALUES (?, ?, 'Pendente', ?, ?, ?, ?)";
-        jdbcTemplate.update(sqlPedido, idPedido, idCliente, "Pendente", subtotal, total, java.time.LocalDateTime.now(), dataEntrega);
-
-        Map<String, Object> endereco = (Map<String, Object>) dados.get("endereco");
-        String sqlEndereco = "INSERT INTO endereco_entrega (id_pedido, id_cliente, rua, numero, bairro, cep, complemento) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        jdbcTemplate.update(sqlEndereco, idPedido, idCliente, endereco.get("rua"), endereco.get("numero"),
-                endereco.get("bairro"), endereco.get("cep"), endereco.get("complemento"));
-
-        List<Map<String, Object>> itens = (List<Map<String, Object>>) dados.get("itens");
-        String sqlItem = "INSERT INTO itens_pedido (id_pedido, id_produto, quantidade, preco_unitario, valor_item) VALUES (?, ?, ?, ?, ?)";
-        for (Map<String, Object> item : itens) {
-            jdbcTemplate.update(sqlItem, idPedido, 
-                Integer.parseInt(item.get("id_produto").toString()), 
-                Integer.parseInt(item.get("quantidade").toString()), 
-                Double.parseDouble(item.get("preco_unitario").toString()), 
-                Double.parseDouble(item.get("valor_item").toString()));
-        }
-
-        jdbcTemplate.update("INSERT INTO pagamentos (id_pedido, status_pagamento, metodo_pagamento, valor) VALUES (?, 'Pendente', ?, ?)",
-                idPedido, dados.get("metodo_pagamento"), total);
-
-        return ResponseEntity.ok(Map.of("status", "sucesso", "mensagem", "Pedido realizado com sucesso!"));
-
-    } catch (Exception e) {
-        e.printStackTrace(); 
-        return ResponseEntity.badRequest().body(Map.of("status", "erro", "mensagem", e.getMessage()));
     }
-}
 
     @PostMapping("/pedidos/confirmar-pagamento")
     public ResponseEntity<?> confirmarPagamento(@RequestParam String id) {
