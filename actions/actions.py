@@ -10,7 +10,7 @@ from rasa_sdk.forms import FormValidationAction
 def obter_conexao():
     return psycopg2.connect(
         dbname="rasa", user="postgres", password="admin",
-        host="localhost", port="5432"
+        host="postgres", port="5432"
     )
 
 def buscar_config():
