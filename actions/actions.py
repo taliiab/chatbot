@@ -10,7 +10,7 @@ from rasa_sdk.forms import FormValidationAction
 def obter_conexao():
     return psycopg2.connect(
         dbname="rasa", user="postgres", password="admin",
-        host="postgres", port="5432"
+        host="localhost", port="5432"
     )
 
 def buscar_config():
@@ -49,7 +49,7 @@ def buscar_produto(nome_produto: str):
         cur.execute("""
             SELECT id, preco
             FROM produtos
-            WHERE LOWER(nome) = LOWER(%s)
+            WHERE nome ILIKE %s
             AND ativo = true
             LIMIT 1
         """, (nome_produto,))
