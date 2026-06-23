@@ -264,13 +264,12 @@ nlu:
       - quero realizar o pagamento
       - e o pagamento
 
-  - intent: informar_nome
+  - intent: reutilizar
     examples: |
-      - ana
-      - maria
-      - joão
-      - pedro
-      - carlos
-      - fernanda
-      - julia
-      - luiz
+      - reutilizar
+      - reutilizar endereço
+
+  - intent: nao_reutilizar
+    examples: |
+      - nao reutilizar
+      - não reutilizar

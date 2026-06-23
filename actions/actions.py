@@ -5,11 +5,12 @@ from rasa_sdk import Action, Tracker
 from rasa_sdk.events import SlotSet, AllSlotsReset
 from rasa_sdk.events import FollowupAction
 from rasa_sdk.executor import CollectingDispatcher
+from rasa_sdk.forms import FormValidationAction
 
 def obter_conexao():
     return psycopg2.connect(
         dbname="rasa", user="postgres", password="admin",
-        host="postgres", port="5432"
+        host="localhost", port="5432"
     )
 
 def buscar_config():
@@ -69,86 +70,109 @@ class ActionVerificarCliente(Action):
         return "action_verificar_cliente"
 
     def run(self, dispatcher, tracker, domain):
-
         id_whatsapp = str(tracker.sender_id)
-
+        
         conn = obter_conexao()
         cur = conn.cursor()
 
-        cur.execute("""
-            SELECT nome
-            FROM clientes
-            WHERE id_whatsapp = %s
-        """, (id_whatsapp,))
+        try:
+            cur.execute("""
+                SELECT c.nome, e.rua, e.numero, e.bairro, e.cep, e.complemento
+                FROM clientes c
+                LEFT JOIN endereco_entrega e ON c.id_whatsapp = e.id_cliente
+                WHERE c.id_whatsapp = %s
+                ORDER BY e.id_pedido DESC LIMIT 1
+            """, (id_whatsapp,))
 
-        cliente = cur.fetchone()
+            resultado = cur.fetchone()
+        finally:
+            cur.close()
+            conn.close()
 
-        cur.close()
-        conn.close()
-
-    
-        if cliente:
+        if resultado:
+            nome, rua, numero, bairro, cep, comp = resultado
+            
+            dispatcher.utter_message(
+                text=f"Olá, {nome}! 🏡\n\nEncontrei seu último endereço: {rua}, {numero} - {bairro}.\n\nDeseja usar este endereço para este pedido? (Responda 'Reutilizar' ou 'Não reutilizar')"
+            )
+            
             return [
-                SlotSet("nome_cliente", nome_do_banco)
+                SlotSet("nome_cliente", nome),
+                SlotSet("temp_rua", rua),
+                SlotSet("temp_numero", numero),
+                SlotSet("temp_bairro", bairro),
+                SlotSet("temp_cep", cep),
+                SlotSet("temp_complemento", comp),
+                SlotSet("aguardando_confirmacao_endereco", True)
             ]
-
-
-        dispatcher.utter_message(
-            text="Antes de começarmos, qual é o seu nome?"
-        )
-
-        return []
-
-
-class ActionSalvarNomeCliente(Action):
-
-    def name(self):
-        return "action_salvar_nome_cliente"
-
-    def run(self, dispatcher, tracker, domain):
-
-        nome = tracker.get_slot("nome_cliente")
-        id_whatsapp = str(tracker.sender_id)
-
-        if not nome:
-            nome = tracker.latest_message.get("text")
-
-        conn = obter_conexao()
-        cur = conn.cursor()
-
-        cur.execute("""
-            INSERT INTO clientes (id_whatsapp, nome)
-            VALUES (%s, %s)
-            ON CONFLICT (id_whatsapp)
-            DO UPDATE SET nome = EXCLUDED.nome;
-        """, (id_whatsapp, nome))
-
-        conn.commit()
-        cur.close()
-        conn.close()
-
-        dispatcher.utter_message(text=f"Perfeito, {nome}! 😊")
-
+        
+        dispatcher.utter_message(text="🤔 Antes de começarmos, qual é o seu nome?")
+        
         return [
-            SlotSet("nome_cliente", nome),
-            SlotSet("aguardando_nome", False),
-            FollowupAction("action_iniciar_pedido")
+            SlotSet("aguardando_nome", True) 
         ]
-
-
+    
 class ActionIniciarPedido(Action):
-
     def name(self):
         return "action_iniciar_pedido"
 
     def run(self, dispatcher, tracker, domain):
-
-        dispatcher.utter_message(
-            text="🥚 Vamos começar seu pedido!"
-        )
-
         return [
+            SlotSet("requested_slot", None),
             FollowupAction("fechar_pedido_form")
+        ]
+
+class ActionSalvarNomeCliente(Action):
+    def name(self):
+        return "action_salvar_nome_cliente"
+
+    def run(self, dispatcher, tracker, domain):
+        id_whatsapp = str(tracker.sender_id)
+        nome_digitado = tracker.latest_message.get("text")
+        
+        conn = None
+        try:
+            conn = obter_conexao()
+            cur = conn.cursor()
+            
+            sql = "INSERT INTO clientes (id_whatsapp, nome) VALUES (%s, %s) ON CONFLICT (id_whatsapp) DO UPDATE SET nome = EXCLUDED.nome"
+            cur.execute(sql, (id_whatsapp, nome_digitado))
+            conn.commit()
+            
+            cur.close()
+                        
+            return [
+                SlotSet("nome_cliente", nome_digitado),
+                SlotSet("aguardando_nome", False),
+                FollowupAction("fechar_pedido_form")
+            ]
+        except Exception as e:
+            return []
+        finally:
+            if conn:
+                conn.close()
+
+
+class ValidateFecharPedidoForm(FormValidationAction):
+    def name(self):
+        return "validate_fechar_pedido_form"
+
+    def validate_rua(self, value, dispatcher, tracker, domain):
+        if tracker.get_slot("usar_endereco_antigo"):
+            return {"rua": tracker.get_slot("temp_rua")}
+        return {"rua": value}
+    
+class ActionPreencherEnderecoAntigo(Action):
+    def name(self):
+        return "action_preencher_endereco_antigo"
+
+    def run(self, dispatcher, tracker, domain):
+        return [
+            SlotSet("rua", tracker.get_slot("temp_rua")),
+            SlotSet("numero", tracker.get_slot("temp_numero")),
+            SlotSet("bairro", tracker.get_slot("temp_bairro")),
+            SlotSet("cep", tracker.get_slot("temp_cep")),
+            SlotSet("complemento", tracker.get_slot("temp_complemento")),
         ]
 
 class ActionCalcularValoresPedido(Action):
@@ -260,38 +284,29 @@ class ActionLimparSlotParaAlterar(Action):
 
         if not campo:
             dispatcher.utter_message(
-                text="Não consegui identificar o que você deseja alterar."
+                text="Não consegui identificar o que você deseja alterar. Digite novamente."
             )
             return []
-
-        dispatcher.utter_message(
-            text=f"✏️ Certo! Vamos alterar: {campo}"
-        )
 
         return [SlotSet(campo, None)]
 
 class ActionSalvarPedidoBanco(Action):
-
     def name(self) -> Text:
         return "action_salvar_pedido_banco"
 
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any]
-    ) -> List[Dict[Text, Any]]:
+    def _buscar_nome_do_banco(self, cur, id_whatsapp):
+        cur.execute("SELECT nome FROM clientes WHERE id_whatsapp = %s LIMIT 1", (id_whatsapp,))
+        resultado = cur.fetchone()
+        return resultado[0] if resultado else "Cliente"
 
+    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         id_whatsapp = str(tracker.sender_id)
-
-        nome_cliente = tracker.get_slot("nome_cliente")
-
+        
+        # Recuperamos os slots necessários
         nome_produto = tracker.get_slot("produto")
         qtd_texto = tracker.get_slot("quantidade")
-
         data_entrega_texto = tracker.get_slot("data")
         metodo_pagamento = tracker.get_slot("pagamento")
-
         rua = tracker.get_slot("rua")
         numero = tracker.get_slot("numero")
         bairro = tracker.get_slot("bairro")
@@ -299,221 +314,73 @@ class ActionSalvarPedidoBanco(Action):
         complemento = tracker.get_slot("complemento")
 
         if not rua or not numero or not bairro:
-            dispatcher.utter_message(
-                text="⚠️ Endereço incompleto."
-            )
+            dispatcher.utter_message(text="⚠️ Endereço incompleto.")
             return []
 
         try:
-            quantidade = int(
-                ''.join(filter(str.isdigit, str(qtd_texto)))
-            )
+            quantidade = int(''.join(filter(str.isdigit, str(qtd_texto))))
         except Exception:
             quantidade = 1
 
         conn = None
         cur = None
-
         try:
             conn = obter_conexao()
             cur = conn.cursor()
 
+            nome_real = self._buscar_nome_do_banco(cur, id_whatsapp)
 
-            cur.execute("""
-                SELECT id, preco
-                FROM produtos
-                WHERE LOWER(nome) = LOWER(%s)
-                AND ativo = true
-                LIMIT 1
-            """, (nome_produto,))
-
+            cur.execute("SELECT id, preco FROM produtos WHERE LOWER(nome) = LOWER(%s) AND ativo = true LIMIT 1", (nome_produto,))
             produto = cur.fetchone()
-
             if not produto:
-                dispatcher.utter_message(
-                    text="❌ Produto não encontrado."
-                )
+                dispatcher.utter_message(text="❌ Produto não encontrado.")
                 return []
 
             id_produto, preco_unitario = produto
 
-
-
-            cur.execute("""
-                SELECT chave, valor
-                FROM configuracoes
-            """)
-
-            configs = {
-                chave: valor
-                for chave, valor in cur.fetchall()
-            }
-
-            qtd_frete_gratis = int(
-                configs.get("qtd_frete_gratis", 5)
-            )
-
-            valor_frete_padrao = float(
-                configs.get("valor_frete_padrao", 10)
-            )
-
-
+            cur.execute("SELECT chave, valor FROM configuracoes")
+            configs = {chave: valor for chave, valor in cur.fetchall()}
+            qtd_frete_gratis = int(configs.get("qtd_frete_gratis", 5))
+            valor_frete_padrao = float(configs.get("valor_frete_padrao", 10))
 
             subtotal = float(preco_unitario) * quantidade
-
-            if quantidade >= qtd_frete_gratis:
-                custo_frete = 0.0
-            else:
-                custo_frete = valor_frete_padrao
-
+            custo_frete = 0.0 if quantidade >= qtd_frete_gratis else valor_frete_padrao
             total = subtotal + custo_frete
 
-
-
+            # 4. Data
             data_entrega = datetime.date.today()
-
             if data_entrega_texto and "/" in str(data_entrega_texto):
                 try:
                     dia, mes = data_entrega_texto.split("/")
-                    data_entrega = datetime.date(
-                        datetime.date.today().year,
-                        int(mes),
-                        int(dia)
-                    )
-                except Exception:
-                    pass
+                    data_entrega = datetime.date(datetime.date.today().year, int(mes), int(dia))
+                except: pass
 
+            id_pedido = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
-            id_pedido = datetime.datetime.now().strftime(
-                "%Y%m%d%H%M%S"
-            )
+            cur.execute("INSERT INTO pedidos (id, id_cliente, data_entrega, status_entrega, custo_frete, subtotal, total) VALUES (%s,%s,%s,'Pendente',%s,%s,%s)",
+                        (id_pedido, id_whatsapp, data_entrega, custo_frete, subtotal, total))
 
+            cur.execute("INSERT INTO itens_pedido (id_pedido, id_produto, quantidade, preco_unitario, valor_item) VALUES (%s,%s,%s,%s,%s)",
+                        (id_pedido, id_produto, quantidade, preco_unitario, subtotal))
 
-            cur.execute("""
-                INSERT INTO clientes (
-                    id_whatsapp,
-                    nome
-                )
-                VALUES (%s, %s)
-                ON CONFLICT (id_whatsapp)
-                DO UPDATE SET
-                    nome = EXCLUDED.nome;
-            """, (
-                id_whatsapp,
-                nome_cliente
-            ))
+            cur.execute("INSERT INTO endereco_entrega (id_pedido, id_cliente, rua, numero, bairro, cep, complemento) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                        (id_pedido, id_whatsapp, rua, numero, bairro, cep, complemento))
 
-
-            cur.execute("""
-                INSERT INTO pedidos (
-                    id,
-                    id_cliente,
-                    data_entrega,
-                    status_entrega,
-                    custo_frete,
-                    subtotal,
-                    total
-                )
-                VALUES (
-                    %s,%s,%s,
-                    'Pendente',
-                    %s,%s,%s
-                );
-            """, (
-                id_pedido,
-                id_whatsapp,
-                data_entrega,
-                custo_frete,
-                subtotal,
-                total
-            ))
-
-
-            cur.execute("""
-                INSERT INTO itens_pedido (
-                    id_pedido,
-                    id_produto,
-                    quantidade,
-                    preco_unitario,
-                    valor_item
-                )
-                VALUES (
-                    %s,%s,%s,%s,%s
-                );
-            """, (
-                id_pedido,
-                id_produto,
-                quantidade,
-                preco_unitario,
-                subtotal
-            ))
-
-            cur.execute("""
-                INSERT INTO endereco_entrega (
-                    id_pedido,
-                    id_cliente,
-                    rua,
-                    numero,
-                    bairro,
-                    cep,
-                    complemento
-                )
-                VALUES (
-                    %s,%s,%s,%s,%s,%s,%s
-                );
-            """, (
-                id_pedido,
-                id_whatsapp,
-                rua,
-                numero,
-                bairro,
-                cep,
-                complemento
-            ))
-
-
-
-            cur.execute("""
-                INSERT INTO pagamentos (
-                    id_pedido,
-                    metodo_pagamento,
-                    valor,
-                    status_pagamento
-                )
-                VALUES (
-                    %s,%s,%s,'Pendente'
-                );
-            """, (
-                id_pedido,
-                metodo_pagamento,
-                total
-            ))
+            cur.execute("INSERT INTO pagamentos (id_pedido, metodo_pagamento, valor, status_pagamento) VALUES (%s,%s,%s,'Pendente')",
+                        (id_pedido, metodo_pagamento, total))
 
             conn.commit()
 
-            dispatcher.utter_message(
-                text=f"✅ Pedido realizado com sucesso, {nome_cliente}! Agora é só aguardar a entrega. Obrigado pela preferência! 🐔🥚"
-
-            )
+            dispatcher.utter_message(text=f"✅ Pedido realizado com sucesso, {nome_real}! Agora é só aguardar a entrega. Obrigado pela preferência! 🐔🥚")
 
         except Exception as e:
             print(f"Erro ao salvar pedido: {e}")
-
-            if conn:
-                conn.rollback()
-
-            dispatcher.utter_message(
-                text="❌ Ocorreu um erro ao salvar o pedido."
-            )
-
+            if conn: conn.rollback()
+            dispatcher.utter_message(text="❌ Ocorreu um erro ao salvar o pedido.")
             return []
-
         finally:
-            if cur:
-                cur.close()
-
-            if conn:
-                conn.close()
+            if cur: cur.close()
+            if conn: conn.close()
 
         return [AllSlotsReset()]
 

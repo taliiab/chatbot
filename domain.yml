@@ -34,11 +34,14 @@ intents:
   - alterar_data
   - alterar_pagamento
   - fazer_pagamento
+  - realizar
+  - nao_reutilizar
 
 entities: []
 
 actions:
   - action_verificar_cliente
+  - action_preencher_endereco_antigo
   - action_salvar_nome_cliente
   - action_iniciar_pedido
   - action_calcular_valores_pedido
@@ -201,21 +204,52 @@ slots:
         intent: alterar_pagamento
         value: pagamento
 
-
   nome_cliente:
     type: text
     influence_conversation: false
     mappings:
-      - type: from_text
-        conditions:
-          - active_loop: fechar_pedido_form
-            requested_slot: nome_cliente
+      - type: custom
+
 
   aguardando_nome:
+    type: bool
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  usar_endereco_antigo:
     type: bool
     influence_conversation: true
     mappings:
       - type: custom
+
+  temp_rua:
+    type: text
+    mappings:
+      - type: custom
+  temp_numero:
+    type: text
+    mappings:
+      - type: custom
+  temp_bairro:
+    type: text
+    mappings:
+      - type: custom
+  temp_cep:
+    type: text
+    mappings:
+      - type: custom
+  temp_complemento:
+    type: text
+    mappings:
+      - type: custom
+  
+  aguardando_confirmacao_endereco:
+    type: bool
+    influence_conversation: true
+    mappings:
+      - type: custom
+
 
 forms:
   fechar_pedido_form:
@@ -230,16 +264,14 @@ forms:
       - complemento
       - data
       - pagamento
+      
 
 responses:
   utter_saudacao:
     - text: |
         🐔🥚 Olá, seja bem-vindo à Vó Nana Ovos!
-
         Somos uma empresa comprometida com a produção de ovos de qualidade, vindos de galinhas criadas com mais liberdade, cuidado e bem-estar.
-
         Acreditamos que um ambiente mais saudável para as aves resulta em produtos mais frescos e saborosos para a sua mesa. 💛
-
         Como podemos te ajudar hoje?
         • 🥚 Fazer um pedido
         • 📦 Visualizar pedidos (pendentes ou em processo de entrega)
@@ -248,20 +280,15 @@ responses:
   utter_ask_produto:
     - text: |
         🥚 Ótimo! Conheça nossos produtos:
-
         1️⃣ Dúzia de ovos extras
-
         2️⃣ Ovos tipo Jumbo (10 unidades)
-
         📑 Lembrete:
         Na compra de 5 dúzias (ou 5 caixas jumbo), a entrega será gratuita! 🚚
-
         Digite o nome do produto que deseja pedir (Extra ou Jumbo):
 
   utter_ask_quantidade:
     - text: |
         Excelente escolha! 🥚
-
         Quantas unidades ou caixas você deseja encomendar?
 
   utter_ask_rua:
@@ -286,7 +313,6 @@ responses:
   utter_ask_pagamento:
     - text: 
         💳 Qual será a forma de pagamento?
-
          • Pix
          • Dinheiro
          • Crédito
@@ -295,22 +321,17 @@ responses:
   utter_conferir_pedido:
     - text: |
         📝 Resumo do pedido:
-
         🥚 Produto: {produto}
         📦 Quantidade: {quantidade}
-
         🏡 Endereço de Entrega:
         • Rua: {rua}, Nº {numero}
         • Bairro: {bairro}
         • CEP: {cep}
         • Comp.: {complemento}
-
         📅 Data de entrega: {data}
         💳 Método de pagamento: {pagamento}
-
         🚚 Valor entrega: R$ {valor_entrega}
         💵 Valor total: R$ {valor_total}
-
         Você confirma essas informações?
         • ✅  Sim
         • ✏️  Alterar
@@ -318,15 +339,12 @@ responses:
   utter_pedido_confirmado:
     - text: |
         ✅ Seu pedido foi realizado com SUCESSO!
-
         Agora é só aguardar, nossa equipe já está preparando! 🐔🥚
-
         Agradecemos pela preferência! 💛
 
   utter_alteracao_pedido:
     - text: |
         Qual informação você deseja alterar?
-
         • 🥚 Produto
         • 📦 Quantidade
         • 🏡 Rua
@@ -352,9 +370,7 @@ responses:
 
   utter_visualizar_pedidos:
     - text: |
-        📦 Certo!
-
-        Estamos localizando seus pedidos...
+        📦 Certo! Estamos localizando seus pedidos...
 
   utter_cancelar_pedido:
     - text: |
@@ -370,9 +386,7 @@ responses:
 
   utter_agradecimento:
     - text: |
-        😊 Disponha!
-
-        Posso ajudar em mais alguma coisa?
+        😊 Disponha!Posso ajudar em mais alguma coisa?
 
   utter_finalizacao:
     - text: |
