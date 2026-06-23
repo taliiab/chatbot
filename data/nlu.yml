@@ -31,6 +31,10 @@ nlu:
       - comprar ovos
       - fazer pedido
       - gostaria de encomendar
+      - quero pedir
+      - pedir
+      - realizar pedido
+
 
   - intent: visualizar_pedidos
     examples: |
@@ -91,6 +95,7 @@ nlu:
       - #117712          
       - pedido #319398   
       - 180898
+      - 242335
 
   - intent: informar_bairro
     examples: |
@@ -151,13 +156,61 @@ nlu:
     examples: |
       - quero alterar o pedido
       - mudar informação do meu pedido
-      - alterar dados de entrega
-      - quero mudar o [endereco](campo_alterar)
-      - preciso alterar o [endereco](campo_alterar) de entrega
-      - mude o [endereco](campo_alterar) por favor
-      - quero mudar a [data](campo_alterar)
-      - preciso alterar a [data](campo_alterar) de entrega
-      - mude a [data](campo_alterar) do agendamento
+      - alterar pedido
+      - alterar
+      - mudar
+
+  - intent: alterar_produto
+    examples: |
+        - alterar produto
+        - produto
+        - quero alterar produto
+        - mudar produto
+
+
+  - intent: alterar_quantidade
+    examples: |
+        - quantidade
+        - quero alterar quantidade
+        - alterar quantidade
+        - mudar quantidade
+
+
+  - intent: alterar_rua
+    examples: |
+      - alterar rua
+      - rua
+      - mudar a rua
+      - modificar a rua
+
+  - intent: alterar_numero
+    examples: |
+      - mudar número
+      - alterar número
+      - numero
+      - número
+      - quero mudar o número
+
+  - intent: alterar_data
+    examples: |
+      - alterar data
+      - alterar data de entrega
+      - data
+      - mudar data de entrega
+      - mudar a data
+
+
+
+  - intent: alterar_pagamento
+    examples: |
+      - alterar modo de pagamento
+      - alterar pagamento
+      - pagamento
+      - modo de pagamento
+      - método de pagamento
+      - mudar modo de pagar
+
+      
 
   - intent: cancelar_pedido
     examples: |
@@ -165,14 +218,6 @@ nlu:
       - cancelamento de pedido
       - excluir pedido
       - cancela para mim
-
-  - intent: alterar_endereco_completo
-    examples: |
-      - quero mudar o endereço de entrega
-      - trocar local de entrega
-      - Rua das Palmeiras, 150, Centro
-      - Av Paulista 1000, apto 32, Bela Vista
-      - Mude para a Rua das Flores, 45, Bairro Novo
 
   - intent: informar_endereco
     examples: |
@@ -209,3 +254,23 @@ nlu:
       - jumbo
       - ovos jumbo
       - quero jumbo
+
+  - intent: fazer_pagamento
+    examples: |
+      - pagar
+      - fazer pagamento
+      - quero pagar
+      - realizar pagemento
+      - quero realizar o pagamento
+      - e o pagamento
+
+  - intent: informar_nome
+    examples: |
+      - ana
+      - maria
+      - joão
+      - pedro
+      - carlos
+      - fernanda
+      - julia
+      - luiz

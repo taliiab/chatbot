@@ -22,24 +22,21 @@ rules:
     - intent: finalizacao
     - action: utter_finalizacao
 
-- rule: Ativar formulário de pedido
+- rule: Iniciar pedido
   steps:
     - intent: fazer_pedido
+    - action: action_verificar_cliente
     - action: fechar_pedido_form
     - active_loop: fechar_pedido_form
-
 
 - rule: Submeter formulário e calcular valores
   condition:
     - active_loop: fechar_pedido_form
-
   steps:
     - action: fechar_pedido_form
     - active_loop: null
-
     - slot_was_set:
         - requested_slot: null
-
     - action: action_calcular_valores_pedido
     - action: utter_conferir_pedido
 
@@ -116,3 +113,10 @@ rules:
   steps:
     - intent: confirmar
     - action: action_salvar_pedido_banco
+
+- rule: Fazer Pagamento
+  steps:
+    - intent: fazer_pagamento
+    - action: utter_fazer_pagamento
+  
+

@@ -4,6 +4,7 @@ intents:
   - saudacao
   - finalizacao
   - agradecimento
+  - informar_nome
   - fazer_pedido
   - visualizar_pedidos
   - falar_empresa
@@ -32,10 +33,14 @@ intents:
   - alterar_numero
   - alterar_data
   - alterar_pagamento
+  - fazer_pagamento
 
 entities: []
 
 actions:
+  - action_verificar_cliente
+  - action_salvar_nome_cliente
+  - action_iniciar_pedido
   - action_calcular_valores_pedido
   - action_salvar_pedido_banco
   - action_buscar_pedidos_banco
@@ -196,9 +201,26 @@ slots:
         intent: alterar_pagamento
         value: pagamento
 
+
+  nome_cliente:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_text
+        conditions:
+          - active_loop: fechar_pedido_form
+            requested_slot: nome_cliente
+
+  aguardando_nome:
+    type: bool
+    influence_conversation: true
+    mappings:
+      - type: custom
+
 forms:
   fechar_pedido_form:
     required_slots:
+      - nome_cliente
       - produto
       - quantidade
       - rua
@@ -219,30 +241,22 @@ responses:
         Acreditamos que um ambiente mais saudável para as aves resulta em produtos mais frescos e saborosos para a sua mesa. 💛
 
         Como podemos te ajudar hoje?
-      buttons:
-        - title: "🥚 Fazer um pedido"
-          payload: "/fazer_pedido"
-        - title: "📦 Visualizar pedidos"
-          payload: "/visualizar_pedidos"
-        - title: "📞 Falar com a empresa"
-          payload: "/falar_empresa"
+        • 🥚 Fazer um pedido
+        • 📦 Visualizar pedidos (pendentes ou em processo de entrega)
+        • 📞 Falar com a empresa
 
   utter_ask_produto:
     - text: |
         🥚 Ótimo! Conheça nossos produtos:
 
-        1️⃣ Dúzia de ovos extras — R$ 18,00
+        1️⃣ Dúzia de ovos extras
 
-        2️⃣ Ovos tipo Jumbo (10 unidades) — R$ 19,00
+        2️⃣ Ovos tipo Jumbo (10 unidades)
 
         📑 Lembrete:
         Na compra de 5 dúzias (ou 5 caixas jumbo), a entrega será gratuita! 🚚
-      buttons:
-        - title: "1️⃣ Dúzia Extra"
-          payload: "/produto_extra"
 
-        - title: "2️⃣ Jumbo"
-          payload: "/produto_jumbo"
+        Digite o nome do produto que deseja pedir (Extra ou Jumbo):
 
   utter_ask_quantidade:
     - text: |
@@ -270,19 +284,13 @@ responses:
         📅 Qual data você deseja para a entrega?
 
   utter_ask_pagamento:
-    - text: "💳 Qual será a forma de pagamento?"
-      buttons:
-        - title: "Pix"
-          payload: "/pagamento_pix"
+    - text: 
+        💳 Qual será a forma de pagamento?
 
-        - title: "Dinheiro"
-          payload: "/pagamento_dinheiro"
-
-        - title: "Crédito"
-          payload: "/pagamento_credito"
-
-        - title: "Débito"
-          payload: "/pagamento_debito"
+         • Pix
+         • Dinheiro
+         • Crédito
+         • Débito
 
   utter_conferir_pedido:
     - text: |
@@ -304,11 +312,8 @@ responses:
         💵 Valor total: R$ {valor_total}
 
         Você confirma essas informações?
-      buttons:
-        - title: "✅ Sim"
-          payload: "/confirmar"
-        - title: "✏️ Alterar"
-          payload: "/alterar_pedido"
+        • ✅  Sim
+        • ✏️  Alterar
 
   utter_pedido_confirmado:
     - text: |
@@ -319,25 +324,16 @@ responses:
         Agradecemos pela preferência! 💛
 
   utter_alteracao_pedido:
-    - text: "Qual informação você deseja alterar?"
-      buttons:
-        - title: "🥚 Produto"
-          payload: "/alterar_produto"
+    - text: |
+        Qual informação você deseja alterar?
 
-        - title: "📦 Quantidade"
-          payload: "/alterar_quantidade"
+        • 🥚 Produto
+        • 📦 Quantidade
+        • 🏡 Rua
+        • 🔢 Número
+        • 📅 Data
+        • 💳 Pagamento
 
-        - title: "🏡 Rua"
-          payload: "/alterar_rua"
-
-        - title: "🔢 Número"
-          payload: "/alterar_numero"
-
-        - title: "📅 Data"
-          payload: "/alterar_data"
-
-        - title: "💳 Pagamento"
-          payload: "/alterar_pagamento"
 
   utter_alteracao_endereco:
     - text: "Certo! Digite seu novo endereço de entrega."
@@ -350,6 +346,9 @@ responses:
 
   utter_confirmar_alteracao:
     - text: "✅ Sua alteração foi realizada com sucesso!"
+  
+  utter_fazer_pagamento:
+    - text: "Para realizar o pagamento, fale com o propietário Luiz: +55 55 9941-6442 ☺️​"
 
   utter_visualizar_pedidos:
     - text: |
@@ -359,7 +358,7 @@ responses:
 
   utter_cancelar_pedido:
     - text: |
-        Qual é o código do pedido que deseja cancelar?
+        Qual é o código do pedido que deseja cancelar? (digite com o #)
 
   utter_cancelar_pedido_confirmar:
     - text: |
@@ -367,9 +366,7 @@ responses:
 
   utter_falar_empresa:
     - text: |
-        ⏳ Aguarde um momento...
-
-        Estamos entrando em contato com nossa equipe.
+        Fale com o propietário Luiz: +55 55 9941-6442 👨‍🌾​🥚​
 
   utter_agradecimento:
     - text: |
